@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Conduit.Model
+namespace Conduit.Models
 {
     public class Class1
     {
