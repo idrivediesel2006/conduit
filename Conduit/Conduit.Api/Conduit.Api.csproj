@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Conduit.Data\Conduit.Data.csproj" />
     <ProjectReference Include="..\Conduit.Models\Conduit.Models.csproj" />
     <ProjectReference Include="..\Conduit.Repositories\Conduit.Repositories.csproj" />
   </ItemGroup>
