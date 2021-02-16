@@ -1,10 +1,11 @@
 ﻿using Conduit.Models.Requests;
 using Conduit.Models.Responses;
+using System.Threading.Tasks;
 
 namespace Conduit.Repositories
 {
     public interface IAccountRepository
     {
-        User RegisterUser(Register register);
+        Task<User> RegisterUserAsync(Register register);
     }
 }

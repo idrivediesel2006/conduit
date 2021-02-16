@@ -1,8 +1,11 @@
-﻿using Conduit.Models.Requests;
+﻿using Conduit.Models.Exceptions;
+using Conduit.Models.Requests;
 using Conduit.Models.Responses;
 using Conduit.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
 namespace Conduit.Api.Controllers
 {
@@ -14,10 +17,23 @@ namespace Conduit.Api.Controllers
         private ILogger<UsersController> Logger;
 
         [HttpPost]
-        public IActionResult RegisterUser([FromBody]UserRequest<Register> req)
+        public async Task<IActionResult> RegisterUserAsync([FromBody]UserRequest<Register> req)
         {
-            User user = AccountRepo.RegisterUser(req.User);
-            return Ok(new { user });
+            try
+            {
+                User user = await AccountRepo.RegisterUserAsync(req.User);
+                return Ok(new { user });
+            }
+            catch (UserExistException ex)
+            {
+                Logger.LogWarning(ex.Message, ex);
+                return StatusCode(422, new { error = ex.ToDictionary() });
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e.Message, e);
+                return StatusCode(500, e.Message);
+            }
         }
 
         public UsersController(IAccountRepository accountRepo, ILogger<UsersController> logger)
