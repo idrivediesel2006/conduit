@@ -1,4 +1,5 @@
 using Conduit.Data;
+using Conduit.Models.Responses;
 using Conduit.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -27,6 +28,11 @@ namespace Conduit.Api
             {
                 options.UseSqlServer(
                     Configuration.GetConnectionString("DefaultConnection"));
+            });
+            services.AddAutoMapper(cfg =>
+            {
+                cfg.CreateMap<Account, User>();
+                cfg.CreateMap<Person, User>();
             });
             services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddControllers();
