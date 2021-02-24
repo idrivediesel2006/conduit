@@ -16,6 +16,26 @@ namespace Conduit.Api.Controllers
         private IAccountRepository AccountRepo;
         private ILogger<UsersController> Logger;
 
+        [HttpPost("login")]
+        public async Task<IActionResult> LoginAsync([FromBody] UserRequest<Login> req)
+        {
+            try
+            {
+                User user = await AccountRepo.LoginAsync(req.User).ConfigureAwait(false);
+                return Ok(new { user });
+            }
+            catch (LoginFailedException ex)
+            {
+                Logger.LogWarning(ex.Message, ex);
+                return StatusCode(422, ex.ToDictionary());
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e.Message, e);
+                return StatusCode(500, e.Message);
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> RegisterUserAsync([FromBody]UserRequest<Register> req)
         {

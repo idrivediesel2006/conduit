@@ -7,5 +7,6 @@ namespace Conduit.Repositories
     public interface IAccountRepository
     {
         Task<User> RegisterUserAsync(Register register);
+        Task<User> LoginAsync(Login user);
     }
 }
