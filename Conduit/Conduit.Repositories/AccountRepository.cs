@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -89,6 +90,22 @@ namespace Conduit.Repositories
             return tokenHandler.WriteToken(token);
         }
 
+        private bool VerifyPassword(string password, byte[] passwordHash, byte[] passwordSalt)
+        {
+            using (var hmac = new HMACSHA512(passwordSalt))
+            {
+                var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+                for (int i = 0; i < computedHash.Length; i++)
+                {
+                    if (computedHash[i] != passwordHash[i])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+
         public async Task<User> RegisterUserAsync(Register register)
         {
             bool userExist = await UserExistAsync(register);
@@ -97,6 +114,26 @@ namespace Conduit.Repositories
                 throw new UserExistException("The email or user name is already in use.");
             }
             Account account = await CreateAccountAsync(register);
+            User user = CreateUser(account);
+            user.Token = CreateToken(user);
+            return user;
+        }
+
+        public async Task<User> LoginAsync(Login login)
+        {
+            Account account = await Context
+                                        .Accounts
+                                        .Where(x => x.Email == login.Email)
+                                        .Include(p => p.Person)
+                                        .FirstOrDefaultAsync().ConfigureAwait(false);
+            if (account is null)
+            {
+                throw new LoginFailedException("Login Failed - email not found.");
+            }
+            if (!VerifyPassword(login.Password, account.PasswordHash, account.PasswordSalt))
+            {
+                throw new LoginFailedException("Login Failed - password is incorrect.");
+            }
             User user = CreateUser(account);
             user.Token = CreateToken(user);
             return user;
