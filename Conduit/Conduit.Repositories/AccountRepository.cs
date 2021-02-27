@@ -3,6 +3,7 @@ using Conduit.Data;
 using Conduit.Models.Exceptions;
 using Conduit.Models.Requests;
 using Conduit.Models.Responses;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,7 @@ namespace Conduit.Repositories
 {
     public class AccountRepository : IAccountRepository
     {
+        private IHttpContextAccessor HttpContextAccessor;
         private ConduitContext Context;
         private IMapper Mapper;
         private IConfiguration Configuration;
@@ -65,6 +67,15 @@ namespace Conduit.Repositories
             User user = new User();
             Mapper.Map(account, user);
             Mapper.Map(account.Person, user);
+            if (HttpContextAccessor.HttpContext.Request.Headers.ContainsKey("Authorization"))
+            {
+                user.Token = HttpContextAccessor
+                                .HttpContext
+                                .Request
+                                .Headers["Authorization"]
+                                .ToString()
+                                .Split(" ")[1];
+            }
             return user;
         }
 
@@ -139,8 +150,28 @@ namespace Conduit.Repositories
             return user;
         }
 
-        public AccountRepository(ConduitContext context, IMapper mapper, IConfiguration configuration, ILogger<AccountRepository> logger)
+        public async Task<User> GetCurrentUserAsync()
         {
+            Account account = await GetLoggedInUser();
+            if (account is null)
+            {
+                throw new InvalidCredentialsException("Invalid user - Please login using a valid email & password.");
+            }
+            return CreateUser(account);
+        }
+
+        public async Task<Account> GetLoggedInUser()
+        {
+            return await Context
+                            .Accounts
+                            .Where(u => u.Email == HttpContextAccessor.HttpContext.User.Identity.Name)
+                            .Include(p => p.Person)
+                            .FirstOrDefaultAsync().ConfigureAwait(false);
+        }
+
+        public AccountRepository(IHttpContextAccessor httpContextAccessor, ConduitContext context, IMapper mapper, IConfiguration configuration, ILogger<AccountRepository> logger)
+        {
+            HttpContextAccessor = httpContextAccessor;
             Context = context;
             Mapper = mapper;
             Configuration = configuration;
