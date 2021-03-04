@@ -1,4 +1,5 @@
 ﻿using Conduit.Models.Exceptions;
+using Conduit.Models.Requests;
 using Conduit.Models.Responses;
 using Conduit.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -34,6 +35,32 @@ namespace Conduit.Api.Controllers
             {
                 Logger.LogError(ex.Message, ex);
                 return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut]
+        [Authorize]
+        public async Task<IActionResult> UpdateUserAsync([FromBody]UserRequest<UpdateUser> req)
+        {
+            try
+            {
+                User user = await AccountRepo.UpdateLoggedInUserAsync(req.User);
+                return Ok(new { user });
+            }
+            catch (DuplicateEmailException dupEx)
+            {
+                Logger.LogWarning(dupEx.Message, dupEx);
+                return StatusCode(422, dupEx.ToDictionary());
+            }
+            catch (DuplicateUserNameException dEx)
+            {
+                Logger.LogWarning(dEx.Message, dEx);
+                return StatusCode(422, dEx.ToDictionary());
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.Message, ex);
+                return StatusCode(500, ex);
             }
         }
 

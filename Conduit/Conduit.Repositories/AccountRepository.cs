@@ -117,6 +117,24 @@ namespace Conduit.Repositories
             }
         }
 
+        private async Task<bool> UserNameIsUniqueAsync(string userName)
+        {
+            var result = await Context
+                    .People
+                    .AnyAsync(p => p.UserName == userName)
+                    .ConfigureAwait(false);
+            return result;
+        }
+
+        private async Task<bool> EmailIsUniqueAsync(string email)
+        {
+            var result = await Context
+                    .Accounts
+                    .AnyAsync(e => e.Email == email)
+                    .ConfigureAwait(false);
+            return result;
+        }
+
         public async Task<User> RegisterUserAsync(Register register)
         {
             bool userExist = await UserExistAsync(register);
@@ -152,7 +170,7 @@ namespace Conduit.Repositories
 
         public async Task<User> GetCurrentUserAsync()
         {
-            Account account = await GetLoggedInUser();
+            Account account = await GetLoggedInUserAsync();
             if (account is null)
             {
                 throw new InvalidCredentialsException("Invalid user - Please login using a valid email & password.");
@@ -160,13 +178,60 @@ namespace Conduit.Repositories
             return CreateUser(account);
         }
 
-        public async Task<Account> GetLoggedInUser()
+        public async Task<Account> GetLoggedInUserAsync()
         {
             return await Context
                             .Accounts
                             .Where(u => u.Email == HttpContextAccessor.HttpContext.User.Identity.Name)
                             .Include(p => p.Person)
                             .FirstOrDefaultAsync().ConfigureAwait(false);
+        }
+
+        public async Task<User> UpdateLoggedInUserAsync(UpdateUser model)
+        {
+            bool genToken = false;
+            Account account = await GetLoggedInUserAsync();
+            if (!string.IsNullOrWhiteSpace(model.Email)
+                && account.Email != model.Email)
+            {
+                if (!await EmailIsUniqueAsync(model.Email))
+                    throw new DuplicateEmailException($"Email {model.Email} is already in use.");
+
+                account.Email = model.Email;
+                genToken = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Password)
+                && !VerifyPassword(model.Password, account.PasswordHash, account.PasswordSalt))
+            {
+                byte[] passwordHash, passwordSalt;
+                CreatePasswordHash(model.Password, out passwordHash, out passwordSalt);
+                account.PasswordHash = passwordHash;
+                account.PasswordSalt = passwordSalt;
+                genToken = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.UserName)
+                && account.Person.UserName != model.UserName)
+            {
+                if (!await UserNameIsUniqueAsync(model.UserName))
+                    throw new DuplicateUserNameException($"User name {model.UserName} is already in use.");
+
+                account.Person.UserName = model.UserName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Image))
+                account.Person.Image = model.Image;
+            if (!string.IsNullOrWhiteSpace(model.Bio))
+                account.Person.Bio = model.Bio;
+
+            await Context.SaveChangesAsync();
+            User user = CreateUser(account);
+            if (genToken)
+            {
+                user.Token = CreateToken(user);
+            }
+            return user;
         }
 
         public AccountRepository(IHttpContextAccessor httpContextAccessor, ConduitContext context, IMapper mapper, IConfiguration configuration, ILogger<AccountRepository> logger)
