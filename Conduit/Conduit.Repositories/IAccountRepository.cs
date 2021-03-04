@@ -10,6 +10,7 @@ namespace Conduit.Repositories
         Task<User> RegisterUserAsync(Register register);
         Task<User> LoginAsync(Login user);
         Task<User> GetCurrentUserAsync();
-        Task<Account> GetLoggedInUser();
+        Task<Account> GetLoggedInUserAsync();
+        Task<User> UpdateLoggedInUserAsync(UpdateUser model);
     }
 }
