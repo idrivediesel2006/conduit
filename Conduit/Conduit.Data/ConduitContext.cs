@@ -6,6 +6,7 @@ namespace Conduit.Data
     {
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Person> People { get; set; }
+        public DbSet<Follow> Follows { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +32,23 @@ namespace Conduit.Data
                 entity
                     .Property(e => e.Image)
                     .HasDefaultValue("'https://static.productionready.io/images/smiley-cyrus.jpg'");
+            });
+
+            modelBuilder.Entity<Follow>(entity =>
+            {
+                entity.HasKey(e => new { e.Follower, e.Following });
+
+                entity.HasOne(d => d.FollowerNavigation)
+                    .WithMany(p => p.FollowerNavigations)
+                    .HasForeignKey(d => d.Follower)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Follower_Profiles");
+
+                entity.HasOne(d => d.FollowingNavigation)
+                    .WithMany(p => p.FollowingNavigations)
+                    .HasForeignKey(d => d.Following)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Following_Profiles");
             });
             base.OnModelCreating(modelBuilder);
         }

@@ -49,9 +49,11 @@ namespace Conduit.Api
             {
                 cfg.CreateMap<Account, User>();
                 cfg.CreateMap<Person, User>();
+                cfg.CreateMap<Person, UserProfile>();
             });
             services.AddHttpContextAccessor();
             services.AddScoped<IAccountRepository, AccountRepository>();
+            services.AddScoped<IProfileRepository, ProfileRepository>();
             services.AddControllers();
             services.Configure<ApiBehaviorOptions>(options =>
             {
