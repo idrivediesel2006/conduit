@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Conduit.Data
@@ -21,6 +22,13 @@ namespace Conduit.Data
         public string Image { get; set; }
 
         public Account Account { get; set; }
+        public virtual ICollection<Follow> FollowerNavigations { get; set; }
+        public virtual ICollection<Follow> FollowingNavigations { get; set; }
 
+        public Person()
+        {
+            FollowerNavigations = new HashSet<Follow>();
+            FollowingNavigations = new HashSet<Follow>();
+        }
     }
 }
