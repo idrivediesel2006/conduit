@@ -24,11 +24,17 @@ namespace Conduit.Data
         public Account Account { get; set; }
         public virtual ICollection<Follow> FollowerNavigations { get; set; }
         public virtual ICollection<Follow> FollowingNavigations { get; set; }
+        public ICollection<Editorial> Editorials { get; set; }
+        public ICollection<Commentary> Commentaries { get; set; }
+        public ICollection<Favorite> Favorites { get; set; }
 
         public Person()
         {
             FollowerNavigations = new HashSet<Follow>();
             FollowingNavigations = new HashSet<Follow>();
+            Editorials = new HashSet<Editorial>();
+            Commentaries = new HashSet<Commentary>();
+            Favorites = new HashSet<Favorite>();
         }
     }
 }

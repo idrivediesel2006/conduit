@@ -7,6 +7,11 @@ namespace Conduit.Data
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Person> People { get; set; }
         public DbSet<Follow> Follows { get; set; }
+        public DbSet<Editorial> Editorials { get; set; }
+        public DbSet<Commentary> Commentaries { get; set; }
+        public DbSet<Favorite> Favorites { get; set; }
+        public DbSet<Tag> Tags { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,6 +55,64 @@ namespace Conduit.Data
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Following_Profiles");
             });
+
+            modelBuilder.Entity<Editorial>(entity =>
+            {
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getutcdate())");
+
+                entity.Property(e => e.UpdateAt)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getutcdate())");
+
+                entity.HasOne(d => d.Person)
+                    .WithMany(p => p.Editorials)
+                    .HasForeignKey(d => d.PersonId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Articles_People");
+            });
+
+            modelBuilder.Entity<Commentary>(entity =>
+            {
+                entity.Property(e => e.CreateAt)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getutcdate())");
+
+                entity.Property(e => e.UpdatedAt)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getutcdate())");
+
+                entity.HasOne(d => d.Editorial)
+                    .WithMany(p => p.Commentaries)
+                    .HasForeignKey(d => d.EditorialId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Commentary_Editorials");
+
+                entity.HasOne(d => d.Person)
+                    .WithMany(p => p.Commentaries)
+                    .HasForeignKey(d => d.PersonId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Commentaries_People");
+            });
+
+            modelBuilder.Entity<Favorite>(entity =>
+            {
+                entity.HasKey(e => new { e.PersonId, e.EditorialId });
+
+                entity.HasOne(d => d.Editorial)
+                    .WithMany(p => p.Favorites)
+                    .HasForeignKey(d => d.EditorialId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Favorites_Editorials");
+
+                entity.HasOne(d => d.Person)
+                    .WithMany(p => p.Favorites)
+                    .HasForeignKey(d => d.PersonId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Favorites_People");
+            });
+
             base.OnModelCreating(modelBuilder);
         }
 
