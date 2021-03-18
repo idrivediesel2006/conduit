@@ -4,7 +4,7 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
 trigger:
-- main
+- master
 
 pool:
   vmImage: 'windows-latest'
@@ -21,19 +21,17 @@ steps:
   inputs:
     restoreSolution: '$(solution)'
 
-- task: VSBuild@1
+- task: DotNetCoreCLI@2
   inputs:
-    solution: '$(solution)'
-    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    command: 'build'
 
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet publish $(buildConfiguration)'
   inputs:
     command: 'publish'
     publishWebProjects: true
-    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
-    zipAfterPublish: True
+    arguments: '--configuration $(buildConfiguration) --output $(build.ArtifactStagingDirectory)'
+    zipAfterPublish: true
 
 - task: PublishBuildArtifacts@1
-  displayName: 'published artifacts'
+  displayName: 'publish artifacts'
