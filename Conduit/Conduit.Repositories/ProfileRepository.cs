@@ -91,6 +91,13 @@ namespace Conduit.Repositories
             return userProfile;
         }
 
+        public async Task<bool> IsFollowing(string userName)
+        {
+            Person person = await GetPersonAndFollowersAsync(userName);
+            Account account = await AccountRepo.GetLoggedInUserAsync();
+            return person.FollowingNavigations.Any(p => p.Follower == (account is null ? 0 : account.Id));
+        }
+
         public ProfileRepository(
             IAccountRepository accountRepo, 
             ConduitContext context, 
