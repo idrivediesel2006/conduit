@@ -53,6 +53,7 @@ namespace Conduit.Api
                 cfg.CreateMap<Person, UserProfile>();
                 cfg.CreateMap<Editorial, Article>();
                 cfg.CreateMap<ArticleCreateRequest, Editorial>();
+                cfg.CreateMap<Commentary, Comment>();
             });
             services.AddHttpContextAccessor();
             services.AddScoped<IAccountRepository, AccountRepository>();

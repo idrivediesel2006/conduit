@@ -86,6 +86,8 @@ namespace Conduit.Repositories
             Article article = new Article { Author = new UserProfile() };
             Mapper.Map(editorial, article);
             Mapper.Map(editorial.Person, article.Author);
+            article.TagList = (from t in editorial.Tags
+                               select t.DisplayName).ToArray();
             article.Favorited = await IsFavorited(editorial);
             article.Author.Following = await ProfileRepo.IsFollowing(editorial.Person.UserName);
             return article;
@@ -130,9 +132,23 @@ namespace Conduit.Repositories
             }
         }
 
-        public Task<Comment> AddCommenttoArticleAsync(string slug, CommentAddRequest comment)
+        public async Task<Comment> AddCommenttoArticleAsync(string slug, CommentAddRequest comment)
         {
-            throw new System.NotImplementedException();
+            Editorial editorial = await Context.Editorials.FirstOrDefaultAsync(e => e.Slug == slug);
+            if (editorial is null)
+                throw new ArticleNotFoundException($"the slug [{slug}] was not found.");
+            Account account = await AccountRepo.GetLoggedInUserAsync();
+            Commentary commentary = new Commentary
+            {
+                Body = comment.Body,
+                PersonId = account.Id,
+                EditorialId = editorial.ID
+            };
+            var entry = await Context.Commentaries.AddAsync(commentary);
+            await Context.SaveChangesAsync();
+            Comment retComment = Mapper.Map<Comment>(entry.Entity);
+            Mapper.Map(account.Person, retComment.Author);
+            return retComment;
         }
 
         public async Task<Article> CreateArticleAsync(ArticleCreateRequest article)
@@ -147,19 +163,44 @@ namespace Conduit.Repositories
             return await GetArticleBySlugAsync(entry.Entity.Slug);
         }
 
-        public Task DeleteArticleAsync(string slug)
+        public async Task DeleteArticleAsync(string slug)
         {
-            throw new System.NotImplementedException();
+            Editorial editorial = await Context.Editorials.FirstOrDefaultAsync(e => e.Slug == slug);
+            Account account = await AccountRepo.GetLoggedInUserAsync();
+            if (editorial is null ||
+                editorial.PersonId != account.Id)
+                throw new ArticleNotFoundException($"The article with the slug [{slug}] was not found");
+            Context.Editorials.Remove(editorial);
+            await Context.SaveChangesAsync();
         }
 
-        public Task DeleteCommentForArticleAsync(string slug, int id)
+        public async Task DeleteCommentForArticleAsync(string slug, int id)
         {
-            throw new System.NotImplementedException();
+            Commentary commentary = await Context.Commentaries
+                                        .Include(e => e.Editorial)
+                                        .FirstOrDefaultAsync(e => e.Id == id && e.Editorial.Slug == slug);
+            Account account = await AccountRepo.GetLoggedInUserAsync();
+            if (commentary is not null
+                && commentary.PersonId == account.Id)
+            {
+                Context.Commentaries.Remove(commentary);
+                await Context.SaveChangesAsync();
+            }
         }
 
-        public Task<Article> FavoriteArticleAsync(string slug)
+        public async Task<Article> FavoriteArticleAsync(string slug)
         {
-            throw new System.NotImplementedException();
+            Account account = await AccountRepo.GetLoggedInUserAsync();
+            Editorial editorial = await Context.Editorials
+                                            .Include(e => e.Favorites)
+                                            .FirstOrDefaultAsync(e => e.Slug == slug);
+            if (!await IsFavorited(editorial))
+            {
+                Favorite favorite = new Favorite { EditorialId = editorial.ID, PersonId = account.Id };
+                await Context.Favorites.AddAsync(favorite);
+                await Context.SaveChangesAsync();
+            }
+            return await GetArticleBySlugAsync(slug);
         }
 
         public async Task<Article> GetArticleBySlugAsync(string slug)
@@ -217,14 +258,36 @@ namespace Conduit.Repositories
             return articles.ToArray();
         }
 
-        public Task<Comment[]> GetCommentsFromArticleAsync(string slug)
+        public async Task<Comment[]> GetCommentsFromArticleAsync(string slug)
         {
-            throw new System.NotImplementedException();
+            List<Commentary> commentaries = await Context.Commentaries
+                                                .Include(p => p.Person)
+                                                .Where(c => c.Editorial.Slug == slug)
+                                                .ToListAsync();
+            List<Comment> comments = new List<Comment>();
+            foreach (var item in commentaries)
+            {
+                Comment comment = Mapper.Map<Comment>(item);
+                Mapper.Map(item.Person, comment.Author);
+                comment.Author.Following = await ProfileRepo.IsFollowing(item.Person.UserName);
+                comments.Add(comment);
+            }
+            return comments.ToArray();
         }
 
-        public Task<Article> UnfavoriteArticleAsync(string slug)
+        public async Task<Article> UnfavoriteArticleAsync(string slug)
         {
-            throw new System.NotImplementedException();
+            Account account = await AccountRepo.GetLoggedInUserAsync();
+            Editorial editorial = await Context.Editorials
+                                            .Include(e => e.Favorites)
+                                            .FirstOrDefaultAsync(e => e.Slug == slug);
+            if (await IsFavorited(editorial))
+            {
+                Favorite favorite = editorial.Favorites.FirstOrDefault(e => e.PersonId == account.Id);
+                Context.Favorites.Remove(favorite);
+                await Context.SaveChangesAsync();
+            }
+            return await GetArticleBySlugAsync(slug);
         }
 
         public async Task<Article> UpdateArticleAsync(string slug, ArticleUpdateRequest article)
