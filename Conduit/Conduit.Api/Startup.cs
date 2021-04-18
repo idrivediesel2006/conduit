@@ -1,4 +1,5 @@
 using Conduit.Data;
+using Conduit.Models.Requests;
 using Conduit.Models.Responses;
 using Conduit.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -50,10 +51,14 @@ namespace Conduit.Api
                 cfg.CreateMap<Account, User>();
                 cfg.CreateMap<Person, User>();
                 cfg.CreateMap<Person, UserProfile>();
+                cfg.CreateMap<Editorial, Article>();
+                cfg.CreateMap<ArticleCreateRequest, Editorial>();
+                cfg.CreateMap<Commentary, Comment>();
             });
             services.AddHttpContextAccessor();
             services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddScoped<IProfileRepository, ProfileRepository>();
+            services.AddScoped<IArticlesRepository, ArticlesRepository>();
             services.AddControllers();
             services.Configure<ApiBehaviorOptions>(options =>
             {

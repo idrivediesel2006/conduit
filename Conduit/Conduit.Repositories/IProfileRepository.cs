@@ -8,5 +8,6 @@ namespace Conduit.Repositories
         Task<UserProfile> GetProfileAsync(string userName);
         Task<UserProfile> FollowAsync(string userName);
         Task<UserProfile> UnfollowAsync(string userName);
+        Task<bool> IsFollowing(string userName);
     }
 }
