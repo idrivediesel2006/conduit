@@ -59,6 +59,7 @@ namespace Conduit.Api
             services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddScoped<IProfileRepository, ProfileRepository>();
             services.AddScoped<IArticlesRepository, ArticlesRepository>();
+            services.AddScoped<ITagsRepository, TagsRepository>();
             services.AddControllers();
             services.Configure<ApiBehaviorOptions>(options =>
             {
